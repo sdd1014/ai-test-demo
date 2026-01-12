@@ -104,7 +104,12 @@ jobs:
         run: |
           TASK_PATH="${{ steps.task.outputs.task_path }}"
           test -d "$TASK_PATH"
-          node --test "$TASK_PATH"
+          TEST_FILES="$(find "$TASK_PATH" -type f -name '*.test.mjs' -print)"
+          if [ -z "$TEST_FILES" ]; then
+            echo "No test files found under $TASK_PATH" >&2
+            exit 1
+          fi
+          node --test $TEST_FILES
 
       - name: Commit Codex solutions
         if: steps.task.outputs.has_todos == 'true'
