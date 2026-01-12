@@ -21,47 +21,104 @@ jobs:
         with:
           token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
 
-      - name: Check for TODO tasks
-        id: check-tasks
+      - name: Find first TODO task
+        id: task
         run: |
-          if grep -q "Status: TODO" task.md; then
-            echo "has_todos=true" >> $GITHUB_OUTPUT
-            echo "✓ Found TODO tasks"
-          else
-            echo "has_todos=false" >> $GITHUB_OUTPUT
-            echo "✓ No TODO tasks, skipping"
-          fi
+          python3 - <<'PY'
+          import os
+          import re
+
+          text = open("task.md", "r", encoding="utf-8").read()
+          pattern = r"^###\\s+(.+?)\\n(.*?)(?:\\n---\\n|\\Z)"
+
+          task = None
+          for m in re.finditer(pattern, text, flags=re.S | re.M):
+            title = m.group(1).strip()
+            body = m.group(2)
+            status = re.search(r"^-\\s*Status:\\s*(\\S+)", body, flags=re.M)
+            if not status or status.group(1) != "TODO":
+              continue
+            path_m = re.search(r"^-\\s*Path:\\s*(\\S+)", body, flags=re.M)
+            if not path_m:
+              continue
+            task_id = title.split()[0]
+            task = {
+              "id": task_id,
+              "title": title,
+              "path": path_m.group(1).strip(),
+              "block": "### " + title + "\\n" + body.strip() + "\\n",
+            }
+            break
+
+          out = os.environ.get("GITHUB_OUTPUT")
+          if not out:
+            raise SystemExit("GITHUB_OUTPUT not set")
+
+          if not task:
+            with open(out, "a", encoding="utf-8") as f:
+              f.write("has_todos=false\\n")
+            raise SystemExit(0)
+
+          os.makedirs(".ai", exist_ok=True)
+          open(".ai/current-task.md", "w", encoding="utf-8").write(task["block"])
+
+          with open(out, "a", encoding="utf-8") as f:
+            f.write("has_todos=true\\n")
+            f.write(f"task_id={task['id']}\\n")
+            f.write(f"task_path={task['path']}\\n")
+            f.write("task_title<<EOF\\n")
+            f.write(task["title"] + "\\n")
+            f.write("EOF\\n")
+          PY
 
       - name: Create task branch
-        if: steps.check-tasks.outputs.has_todos == 'true'
+        if: steps.task.outputs.has_todos == 'true'
         run: |
-          BRANCH_NAME="codex/solve-$(date +%s)"
+          BRANCH_NAME="codex/${{ steps.task.outputs.task_id }}-$(date +%s)"
           git checkout -b "$BRANCH_NAME"
           echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
 
+      - name: Generate prompt (single task)
+        if: steps.task.outputs.has_todos == 'true'
+        run: |
+          cat .ai/codex.prompt.md .ai/current-task.md > .ai/codex.prompt.generated.md
+
       - name: Run Codex to implement tasks
-        if: steps.check-tasks.outputs.has_todos == 'true'
+        if: steps.task.outputs.has_todos == 'true'
         uses: openai/codex-action@v1
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
-          prompt-file: .ai/codex.prompt.md
+          prompt-file: .ai/codex.prompt.generated.md
           output-file: codex-output.md
           sandbox: workspace-write
           safety-strategy: drop-sudo
 
+      - name: Setup Node
+        if: steps.task.outputs.has_todos == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run tests
+        if: steps.task.outputs.has_todos == 'true'
+        run: |
+          TASK_PATH="${{ steps.task.outputs.task_path }}"
+          test -d "$TASK_PATH"
+          node --test "$TASK_PATH"
+
       - name: Commit Codex solutions
-        if: steps.check-tasks.outputs.has_todos == 'true'
+        if: steps.task.outputs.has_todos == 'true'
         run: |
           git config user.name "Codex Bot"
           git config user.email "codex@openai.com"
 
-          git add problems/
+          git add "${{ steps.task.outputs.task_path }}"
 
           if ! git diff --cached --quiet; then
-            git commit -m "🤖 Codex: Implement TODO tasks
+            git commit -m "🤖 Codex: ${{ steps.task.outputs.task_id }} ${{ steps.task.outputs.task_title }}
 
-            Generated solutions for LeetCode problems.
-            Waiting for Claude Code review."
+            Generated solution + tests.
+            Awaiting Claude Code review."
 
             git push origin "$BRANCH_NAME"
           else
@@ -70,15 +127,18 @@ jobs:
           fi
 
       - name: Create Pull Request
-        if: steps.check-tasks.outputs.has_todos == 'true'
+        if: steps.task.outputs.has_todos == 'true'
         env:
           GH_TOKEN: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
           PR_BODY="## 🤖 Codex Implementation Report
 
-          This PR contains automated solutions for TODO tasks in task.md.
+          This PR contains an automated solution for the first TODO task in task.md.
 
           **Status:** Awaiting Claude Code review 👀
+
+          **Task:** ${{ steps.task.outputs.task_title }}
+          **Path:** \`${{ steps.task.outputs.task_path }}\`
 
           ### Codex Output
           \`\`\`
@@ -90,7 +150,7 @@ jobs:
 
           # Create PR without labels first
           PR_URL=$(gh pr create \
-            --title "🤖 Codex Solutions - $(date +%Y%m%d-%H%M%S)" \
+            --title "🤖 ${{ steps.task.outputs.task_id }} $(date +%Y%m%d-%H%M%S)" \
             --body "$PR_BODY" \
             --base main \
             --head "$BRANCH_NAME")
