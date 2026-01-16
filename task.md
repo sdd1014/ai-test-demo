@@ -18,10 +18,10 @@
 ---
 
 ### LC-020 Valid Parentheses
-- Status: TODO
+- Status: DONE
 - Path: problems/020-valid-parentheses
-- Completed: 2026-01-07
-- Notes: Stack-based O(n) solution with 5 comprehensive test cases
+- Completed: 2026-01-16
+- Notes: Stack-based O(n) solution with 5 test cases. All tests passing. Reviewed and approved by Claude Code.
 
 ---
 
