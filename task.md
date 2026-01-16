@@ -10,10 +10,10 @@
 ## Tasks
 
 ### LC-001 Two Sum
-- Status: TODO
+- Status: DONE
 - Path: problems/001-two-sum
-- Completed: 2026-01-07
-- Notes: Hash map O(n) solution with corrected test cases
+- Completed: 2026-01-16
+- Notes: Hash map O(n) solution with 4 test cases. All tests passing. Reviewed and approved by Claude Code.
 
 ---
 
