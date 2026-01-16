@@ -24,3 +24,11 @@
 - Notes: Stack-based O(n) solution with 5 comprehensive test cases
 
 ---
+
+### LC-121 Best Time to Buy and Sell Stock
+- Status: TODO
+- Path: problems/121-best-time-to-buy-sell-stock
+- Completed: 2026-01-07
+- Notes: Single-pass O(n) solution with min-price tracking, 5 comprehensive test cases covering all edge cases
+
+---
