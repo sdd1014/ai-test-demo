@@ -31,7 +31,7 @@ jobs:
           text = open("task.md", "r", encoding="utf-8").read()
           print(f"DEBUG: Read {len(text)} characters from task.md")
 
-          pattern = r"^###\\s+(.+?)\\n(.*?)(?:\\n---\\n|\\Z)"
+          pattern = r"^###\s+(.+?)\n(.*?)(?:\n---\n|\Z)"
           matches = list(re.finditer(pattern, text, flags=re.S | re.M))
           print(f"DEBUG: Found {len(matches)} task blocks")
 
@@ -41,7 +41,7 @@ jobs:
             body = m.group(2)
             print(f"DEBUG: Checking task: {title}")
 
-            status = re.search(r"^-\\s*Status:\\s*(\\S+)", body, flags=re.M)
+            status = re.search(r"^-\s*Status:\s*(\S+)", body, flags=re.M)
             if not status:
               print(f"DEBUG: No status found")
               continue
@@ -51,7 +51,7 @@ jobs:
               print(f"DEBUG: Status is not TODO, skipping")
               continue
 
-            path_m = re.search(r"^-\\s*Path:\\s*(\\S+)", body, flags=re.M)
+            path_m = re.search(r"^-\s*Path:\s*(\S+)", body, flags=re.M)
             if not path_m:
               print(f"DEBUG: No path found")
               continue
@@ -62,7 +62,7 @@ jobs:
               "id": task_id,
               "title": title,
               "path": path_m.group(1).strip(),
-              "block": "### " + title + "\\n" + body.strip() + "\\n",
+              "block": "### " + title + "\n" + body.strip() + "\n",
             }
             print(f"DEBUG: Selected task: {task_id}")
             break
@@ -74,7 +74,7 @@ jobs:
           if not task:
             print("DEBUG: No TODO task found, exiting")
             with open(out, "a", encoding="utf-8") as f:
-              f.write("has_todos=false\\n")
+              f.write("has_todos=false\n")
             raise SystemExit(0)
 
           print(f"DEBUG: Writing task info to GITHUB_OUTPUT")
@@ -82,12 +82,12 @@ jobs:
           open(".ai/current-task.md", "w", encoding="utf-8").write(task["block"])
 
           with open(out, "a", encoding="utf-8") as f:
-            f.write("has_todos=true\\n")
-            f.write(f"task_id={task['id']}\\n")
-            f.write(f"task_path={task['path']}\\n")
-            f.write("task_title<<EOF\\n")
-            f.write(task["title"] + "\\n")
-            f.write("EOF\\n")
+            f.write("has_todos=true\n")
+            f.write(f"task_id={task['id']}\n")
+            f.write(f"task_path={task['path']}\n")
+            f.write("task_title<<EOF\n")
+            f.write(task["title"] + "\n")
+            f.write("EOF\n")
           print(f"DEBUG: Task setup complete")
           PY
 
