@@ -90,6 +90,8 @@ jobs:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
           prompt-file: .ai/codex.prompt.generated.md
           output-file: codex-output.md
+          model: gpt-5.2-codex
+          codex-version: 0.80.0
           sandbox: workspace-write
           safety-strategy: drop-sudo
 
