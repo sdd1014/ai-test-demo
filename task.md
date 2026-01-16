@@ -26,10 +26,10 @@
 ---
 
 ### LC-121 Best Time to Buy and Sell Stock
-- Status: TODO
+- Status: DONE
 - Path: problems/121-best-time-to-buy-sell-stock
-- Completed: 2026-01-07
-- Notes: Single-pass O(n) solution with min-price tracking, 5 comprehensive test cases covering all edge cases
+- Completed: 2026-01-16
+- Notes: Single-pass O(n) solution with min-price tracking. 5 test cases. All tests passing. Reviewed and approved by Claude Code.
 
 ---
 
