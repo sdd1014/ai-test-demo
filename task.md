@@ -34,7 +34,7 @@
 ---
 
 ### LC-053 Maximum Subarray
-- Status: DONE
+- Status: TODO
 - Path: problems/053-maximum-subarray
 - Completed: 2026-01-08
 - Notes: Kadane's algorithm O(n) solution with proper edge case handling, 4 comprehensive test cases
